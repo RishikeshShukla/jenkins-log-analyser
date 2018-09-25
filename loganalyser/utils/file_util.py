@@ -59,7 +59,7 @@ def process_log_file(file):
                 print("Success is done ! breaking")
                 break
             else:
-                print("working")
+                print("continue working using regex")
     return "log-report"
 
 
