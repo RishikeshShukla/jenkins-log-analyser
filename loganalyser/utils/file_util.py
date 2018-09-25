@@ -1,13 +1,13 @@
-from datetime import datetime
-import os
 import json
+import os
+from builtins import print
+
+from dateutil import parser
+from file_read_backwards import FileReadBackwards
 
 import utils.app_util as utils
 from models.app_build_info_model import ApplicationBuildInfo
 from models.app_build_info_model import BuildInfo
-
-from builtins import print
-
 from utils.enums import IssueType
 
 root_folder = "/home/ubuntu/jenkins-logs/"
@@ -45,8 +45,21 @@ def get_log_file_path(log_file_path):
 
 
 def process_log_file(file):
-    if not None:
-        print("processing file : {}".format(file))
+    '''
+    :param file:
+    :return: str
+     1. load log file from down [Do not load whole file in once load line by line from bottom]
+     2.  Check last line []
+    '''
+    with FileReadBackwards('wfo-saas-webapp-promote-prod-admin_198_final.txt', encoding='utf-8') as frb:
+        while True:
+            line = frb.readline().rstrip('\n')
+            print(line)
+            if line == "Finished: SUCCESS":
+                print("Success is done ! breaking")
+                break
+            else:
+                print("working")
     return "log-report"
 
 
@@ -64,10 +77,7 @@ def prepare_build_info_item(build_details_file, log_report):
         app_build_info.application_name = build_details["application_name"]
         app_build_info.application_type = build_details["application_type"]
         app_build_info.commit_build_id = f'{build_details["git_commit_id"]}_{build_details["build_id"]}'
-        #TODO: convert datetime object
-        #app_build_info.build_date_time = build_details[datetime.now()]
-
-        app_build_info.build_date_time = datetime.now()
+        app_build_info.build_date_time = parser.parse(build_details['build_date_time'])
         app_build_info.status = build_details["status"].upper()
         app_build_info.environment = build_details["environment"]
         build_info = BuildInfo(build_details["build_id"], build_details["committer_id"], log_report)
@@ -101,10 +111,15 @@ def process_logs():
 
 
 if __name__ == "__main__":
-
+    '''
+     Main method to start execution to get logs directories
+        '''
     # list log target directories
     for application in os.listdir(base_log_dir):
         app_log_dir = os.path.join(base_log_dir, application)
         get_log_directories(app_log_dir)
 
     process_logs()
+
+    #utils.find_info_item("abcdesf1324sgde_1634")
+
