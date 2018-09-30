@@ -1,6 +1,6 @@
-from pynamodb.models import Model
 from pynamodb.attributes import UnicodeAttribute, UTCDateTimeAttribute, JSONAttribute
-
+from pynamodb.models import Model
+import json
 
 class ApplicationBuildInfo(Model):
     """
@@ -22,9 +22,14 @@ class ApplicationBuildInfo(Model):
     build_date_time = UTCDateTimeAttribute()
     environment = UnicodeAttribute()
 
+    def __repr__(self):
+        return f"ApplicationBuildInfo{ self.commit_build_id, self.application_name, self.application_type,self.build_info, self.status, self.issue_type, self.build_date_time, self.environment}"
 
-def is_table_exist():
-    return ApplicationBuildInfo.exists()
+    def __item_to_record__(self):
+        build_info = json.loads(self.build_info)
+        return (self.commit_build_id, self.application_name, self.application_type, self.status,
+                self.issue_type, self.build_date_time, self.environment, build_info['build_id'],
+                build_info['committer_id'], build_info['log_report'])
 
 
 class BuildInfo:
