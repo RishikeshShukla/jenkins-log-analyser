@@ -5,13 +5,16 @@ from builtins import print
 from dateutil import parser
 from file_read_backwards import FileReadBackwards
 
-import utils.app_util as utils
+
 from models.app_build_info_model import ApplicationBuildInfo
 from models.app_build_info_model import BuildInfo
+from utils import ddb_util
 from utils.enums import IssueType
+import logging
 
 root_folder = "/home/ubuntu/jenkins-logs/"
 apps_folder = "applications"
+success_report = "Build was completed successfully."
 
 base_log_dir = os.path.join(root_folder, apps_folder)
 
@@ -19,6 +22,7 @@ base_log_dir = os.path.join(root_folder, apps_folder)
 log_dirs_to_processed = []
 
 date_dir_marked_to_be_done = set()
+logger = logging.getLogger('_FileUtil_')
 
 
 def get_log_directories(app_log_dir):
@@ -45,22 +49,20 @@ def get_log_file_path(log_file_path):
 
 
 def process_log_file(file):
-    '''
-    :param file:
-    :return: str
-     1. load log file from down [Do not load whole file in once load line by line from bottom]
-     2.  Check last line []
-    '''
-    with FileReadBackwards('wfo-saas-webapp-promote-prod-admin_198_final.txt', encoding='utf-8') as frb:
+    with FileReadBackwards(file, encoding='utf-8') as frb:
+        line = frb.readline().rstrip('\n')
+        if line == "Finished: SUCCESS":
+            logger.info(success_report)
+            report = "%s" % success_report
+            return report
+
+        logger.error("Build was failed, fetching the reason...")
+
         while True:
             line = frb.readline().rstrip('\n')
-            print(line)
-            if line == "Finished: SUCCESS":
-                print("Success is done ! breaking")
-                break
-            else:
-                print("continue working using regex")
-    return "log-report"
+            # compare using regex and return error log report
+            report = "build was failed reason is Exception {0}".format(line)
+            return report
 
 
 def mark_dir_processed(log_file_dir):
@@ -97,7 +99,7 @@ def process_logs():
             try:
                 log_report = process_log_file(log_file)
                 build_info_item = prepare_build_info_item(build_details_file, log_report)
-                utils.save_build_info(build_info_item)
+                ddb_util.save_build_info(build_info_item)
 
                 if log_report is not None and mark_dir_processed(log_file_loc):
                     date_dir_marked_to_be_done.add(os.path.dirname(log_file_loc))
@@ -121,5 +123,5 @@ if __name__ == "__main__":
 
     process_logs()
 
-    #utils.find_info_item("abcdesf1324sgde_1634")
+    #ddb_util.find_info_item("abcdesf1324sgde_1634")
 

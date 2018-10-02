@@ -3,3 +3,4 @@ pynamodb
 crontab
 python-dateutil
 file_read_backwards
+pandas
